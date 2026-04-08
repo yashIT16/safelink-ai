@@ -6,59 +6,35 @@ A production-ready cybersecurity tool combining a Chrome Extension, Node.js back
 
 ---
 
-## 📁 Folder Structure
+## ⚡ How to Install (For Regular Users)
 
-```
-safelink-ai/
-├── extension/                    # Chrome Extension
-│   ├── manifest.json             # Manifest V3
-│   ├── blocked.html              # Page shown when URL is blocked
-│   ├── popup/
-│   │   ├── popup.html            # Extension popup UI
-│   │   ├── popup.css             # Dark premium styling
-│   │   └── popup.js              # Popup logic
-│   ├── background/
-│   │   └── background.js         # Service worker (real-time protection)
-│   ├── content/
-│   │   ├── content.js            # Page warning overlay
-│   │   └── content.css           # Warning styles
-│   └── icons/
-│       ├── create_icons.py       # Icon generator script
-│       ├── icon16.png
-│       ├── icon48.png
-│       └── icon128.png
-│
-├── backend-node/                 # Node.js Express Backend
-│   ├── server.js                 # Main server entry point
-│   ├── package.json
-│   ├── .env.example              # Environment variables template
-│   ├── routes/
-│   │   └── scan.js               # POST /scan-url, POST /scan-file
-│   ├── database/
-│   │   └── db.js                 # SQLite setup & queries
-│   └── services/
-│       ├── aiService.js          # Calls Flask ML API
-│       ├── safeBrowsing.js       # Google Safe Browsing API
-│       ├── phishTank.js          # PhishTank API
-│       ├── riskScorer.js         # Combined risk scoring (0-100)
-│       └── autoUpdater.js        # Periodic phishing feed updates
-│
-└── ml-model-python/              # Python ML Model + Flask API
-    ├── generate_dataset.py       # Generates synthetic training data
-    ├── feature_extractor.py      # URL feature extraction
-    ├── train_model.py            # Train & save model
-    ├── app.py                    # Flask API (POST /predict-url)
-    └── requirements.txt
-```
+No coding experience required! To protect your browser in 60 seconds, follow these simple steps:
+
+1. **Download the Tool:** Click the green **Code** button at the top of this GitHub page and click **"Download ZIP"**. Extract (unzip) the folder.
+2. **Open Extensions Page:** In your browser (Chrome, Edge, Brave, or Opera), copy and paste `chrome://extensions/` (or `edge://extensions/`) into your address bar and hit Enter.
+3. **Turn on Developer Mode:** Look for the **Developer Mode** switch in the top right or bottom left corner and turn it **ON**.
+4. **Load the Extension:** Click the **Load Unpacked** button in the top left and select the `safelink-ai/extension/` folder you just extracted.
+
+That's it! The SafeLink AI shield 🛡️ will appear in your toolbar. *(Note: To power the AI threat engine, the backend servers must be running. See the Developer Setup below).*
 
 ---
 
-## 🚀 Quick Setup (Step-by-Step)
+## 👨‍💻 Developer / Advanced Setup
+
+If you want to run the machine-learning API and backend servers locally, follow these steps.
 
 ### Prerequisites
 - Python 3.9+ with pip
 - Node.js 18+ with npm
-- Any Chromium-based browser (Google Chrome, Microsoft Edge, Brave, Opera)
+
+### 📁 Folder Structure
+
+```text
+safelink-ai/
+├── extension/                    # Chrome Extension & UI Interfaces
+├── backend-node/                 # Node.js Express Backend (Port 3001)
+└── ml-model-python/              # Python ML Model + Flask API (Port 5000)
+```
 
 ---
 
@@ -108,7 +84,7 @@ Server will start on **http://localhost:3001**
 
 ---
 
-### Step 3: Generate Extension Icons
+### Step 3: Generate Extension Icons (Optional)
 
 Create the icons needed for the browser toolbar.
 
@@ -117,32 +93,6 @@ Create the icons needed for the browser toolbar.
 cd safelink-ai/extension/icons
 python create_icons.py  # Use python3 on Linux
 ```
-
----
-
-### Step 4: Load Extension into your Browser
-
-SafeLink AI is compatible with all modern Chromium-based browsers. You will need to "side-load" the extension.
-
-**Google Chrome / Brave:**
-1. Open your browser and navigate to `chrome://extensions/` (or `brave://extensions/`).
-2. Toggle **Developer Mode** ON in the top right corner.
-3. Click the **"Load unpacked"** button.
-4. Select the `safelink-ai/extension/` folder.
-
-**Microsoft Edge:**
-1. Navigate to `edge://extensions/`.
-2. Toggle **Developer Mode** ON in the bottom left menu.
-3. Click **"Load unpacked"**.
-4. Select the `safelink-ai/extension/` folder.
-
-**Opera:**
-1. Navigate to `opera://extensions`.
-2. Toggle **Developer Mode** ON in the top right.
-3. Click **"Load unpacked"**.
-4. Select the `safelink-ai/extension/` folder.
-
-The SafeLink AI shield icon will appear in your toolbar!
 
 ---
 
