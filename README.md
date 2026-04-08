@@ -1,6 +1,6 @@
 # SafeLink AI 🛡️
 
-**AI-Powered Phishing & Malware Protection Chrome Extension**
+**AI-Powered Phishing & Malware Protection Chrome Extension | Made by Yash IT16**
 
 A production-ready cybersecurity tool combining a Chrome Extension, Node.js backend, Python Flask ML API, and SQLite database — similar to VirusTotal and McAfee, with an AI-based phishing detection engine.
 
