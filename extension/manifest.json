@@ -2,6 +2,7 @@
   "manifest_version": 3,
   "name": "SafeLink AI",
   "version": "1.0.0",
+  "update_url": "https://raw.githubusercontent.com/yashIT16/safelink-ai/master/updates.xml",
   "description": "AI-powered phishing and malware protection. Real-time URL scanning with machine learning.",
 
   "icons": {
