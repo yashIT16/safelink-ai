@@ -44,6 +44,20 @@ async function initialize() {
 
   console.log("[SafeLink AI] Background service worker started.");
   console.log("[SafeLink AI] Settings:", settings);
+
+  // Clear any old/stale dynamic blocking rules from previous sessions
+  if (chrome.declarativeNetRequest) {
+    try {
+      const oldRules = await chrome.declarativeNetRequest.getDynamicRules();
+      const oldRuleIds = oldRules.map(rule => rule.id);
+      if (oldRuleIds.length > 0) {
+        await chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds: oldRuleIds });
+        console.log(`[SafeLink AI] Cleared ${oldRuleIds.length} stale dynamic rules.`);
+      }
+    } catch(e) {
+      console.warn("Could not clear old dynamic rules", e);
+    }
+  }
 }
 
 initialize();
