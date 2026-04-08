@@ -121,10 +121,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
     if (!result) return;
 
     if (result.verdict === "malicious" && settings.block) {
-      // Add dynamic declarative network rule to block future requests to domain
-      await addDynamicBlockRule(tab.url);
-      
-      // Block the page
+      // Gracefully redirect instead of hard-blocking the network
       await blockPage(tabId, tab.url, result);
     } else if (result.verdict === "suspicious") {
       // Show warning overlay via content script
