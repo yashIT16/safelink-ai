@@ -1,0 +1,207 @@
+/* ══════════════════════════════════════════════════
+   SafeLink AI — Content Script Styles
+   Injected into pages to show threat warnings.
+   ══════════════════════════════════════════════════ */
+
+/* ── Keyframe animations ────────────────────────── */
+@keyframes sl-slide-in {
+  from { transform: translateY(-100%); opacity: 0; }
+  to   { transform: translateY(0);     opacity: 1; }
+}
+
+@keyframes sl-slide-out {
+  from { transform: translateY(0);     opacity: 1; }
+  to   { transform: translateY(-100%); opacity: 0; }
+}
+
+@keyframes sl-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+  50%       { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+}
+
+/* ── Overlay (malicious pages) ──────────────────── */
+#safelink-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 2147483646;
+  backdrop-filter: blur(2px);
+  pointer-events: none;
+}
+
+/* ── Warning Banner ─────────────────────────────── */
+#safelink-warning-banner {
+  box-sizing: border-box !important;
+  padding: 12px 16px !important;
+}
+
+#safelink-warning-banner * {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* Inner layout */
+.sl-banner-inner {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  max-width: 1200px !important;
+  margin: 0 auto !important;
+  gap: 16px !important;
+}
+
+/* Left side */
+.sl-banner-left {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  flex: 1 !important;
+  min-width: 0 !important;
+}
+
+.sl-banner-icon {
+  font-size: 28px !important;
+  line-height: 1 !important;
+  flex-shrink: 0 !important;
+}
+
+.sl-banner-content {
+  flex: 1 !important;
+  min-width: 0 !important;
+}
+
+.sl-banner-title {
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  color: #f1f5f9 !important;
+  letter-spacing: 0.8px !important;
+  text-transform: uppercase !important;
+  margin-bottom: 3px !important;
+}
+
+#safelink-warning-banner[data-verdict="malicious"] .sl-banner-title {
+  color: #fca5a5 !important;
+}
+
+#safelink-warning-banner[data-verdict="suspicious"] .sl-banner-title {
+  color: #fde68a !important;
+}
+
+.sl-banner-desc {
+  font-size: 11px !important;
+  color: #94a3b8 !important;
+  line-height: 1.4 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* Right side */
+.sl-banner-right {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  flex-shrink: 0 !important;
+}
+
+/* Score badge */
+.sl-score-badge {
+  display: flex !important;
+  align-items: baseline !important;
+  gap: 2px !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif !important;
+}
+
+.sl-score-num {
+  font-size: 22px !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+}
+
+.sl-score-label {
+  font-size: 10px !important;
+  font-weight: 500 !important;
+  opacity: 0.7 !important;
+}
+
+/* Buttons */
+.sl-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 7px 14px !important;
+  border: none !important;
+  border-radius: 8px !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.2s !important;
+  white-space: nowrap !important;
+  letter-spacing: 0.3px !important;
+}
+
+.sl-btn:hover {
+  transform: translateY(-1px) !important;
+}
+
+.sl-btn:active {
+  transform: translateY(0) !important;
+}
+
+/* Danger button (Go Back) */
+.sl-btn-danger {
+  background: #ef4444 !important;
+  color: #fff !important;
+  animation: sl-pulse 2s infinite !important;
+}
+
+.sl-btn-danger:hover {
+  background: #dc2626 !important;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4) !important;
+}
+
+/* Warning button (Continue) */
+.sl-btn-warn {
+  background: rgba(245, 158, 11, 0.15) !important;
+  color: #f59e0b !important;
+  border: 1px solid rgba(245, 158, 11, 0.35) !important;
+}
+
+.sl-btn-warn:hover {
+  background: rgba(245, 158, 11, 0.25) !important;
+}
+
+/* Dismiss button */
+.sl-btn-dismiss {
+  background: rgba(255, 255, 255, 0.06) !important;
+  color: #64748b !important;
+  width: 30px !important;
+  height: 30px !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  font-size: 12px !important;
+}
+
+.sl-btn-dismiss:hover {
+  background: rgba(255, 255, 255, 0.12) !important;
+  color: #94a3b8 !important;
+}
+
+/* ── Responsive ─────────────────────────────────── */
+@media (max-width: 600px) {
+  .sl-banner-inner {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+  }
+
+  .sl-banner-right {
+    width: 100% !important;
+    justify-content: flex-end !important;
+  }
+
+  .sl-score-badge {
+    display: none !important;
+  }
+}

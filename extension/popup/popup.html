@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SafeLink AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+
+  <!-- ═══════════════════════ HEADER ═══════════════════════ -->
+  <header class="header">
+    <div class="logo">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2L3 7V13C3 17.55 7 21.74 12 23C17 21.74 21 17.55 21 13V7L12 2Z"
+                fill="url(#shieldGrad)" stroke="none"/>
+          <path d="M9 12L11 14L15 10" stroke="white" stroke-width="1.8"
+                stroke-linecap="round" stroke-linejoin="round"/>
+          <defs>
+            <linearGradient id="shieldGrad" x1="3" y1="2" x2="21" y2="23"
+                            gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#6366f1"/>
+              <stop offset="100%" stop-color="#8b5cf6"/>
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+      <div class="logo-text">
+        <span class="logo-name">SafeLink AI</span>
+        <span class="logo-tag">Phishing Protection</span>
+      </div>
+    </div>
+    <div class="header-actions">
+      <div class="protection-badge" id="protectionBadge">
+        <span class="badge-dot"></span>
+        <span class="badge-text">Protected</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ═══════════════════════ CURRENT TAB ═══════════════════════ -->
+  <section class="current-tab-section">
+    <div class="current-tab-label">Current Page</div>
+    <div class="current-tab-url" id="currentTabUrl">
+      <span class="url-loading">Detecting URL...</span>
+    </div>
+    <button class="scan-current-btn" id="scanCurrentBtn">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/>
+        <path d="M20 20L16.5 16.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <path d="M8 11H14M11 8V14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      Scan This Page
+    </button>
+  </section>
+
+  <!-- ═══════════════════════ MANUAL SCAN ═══════════════════════ -->
+  <section class="scan-section">
+    <div class="section-title">
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"
+              stroke="currentColor" stroke-width="2"/>
+        <path d="M13 2v7h7" stroke="currentColor" stroke-width="2"/>
+      </svg>
+      Scan Any URL
+    </div>
+    <div class="input-group">
+      <div class="input-wrapper">
+        <svg class="input-icon" viewBox="0 0 24 24" fill="none">
+          <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <input
+          type="text"
+          id="urlInput"
+          class="url-input"
+          placeholder="Paste URL to scan..."
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <button class="clear-btn" id="clearBtn" title="Clear">✕</button>
+      </div>
+      <button class="scan-btn" id="scanBtn">
+        <span class="scan-btn-text">Scan URL</span>
+        <div class="scan-btn-loader" id="scanBtnLoader">
+          <div class="spinner"></div>
+        </div>
+      </button>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════ RESULTS ═══════════════════════ -->
+  <section class="results-section" id="resultsSection" style="display:none;">
+
+    <!-- Risk Gauge -->
+    <div class="risk-gauge-container">
+      <div class="risk-gauge" id="riskGauge">
+        <svg viewBox="0 0 200 120" class="gauge-svg">
+          <!-- Background arc -->
+          <path d="M 20 100 A 80 80 0 0 1 180 100"
+                class="gauge-bg-arc" fill="none" stroke-width="16"/>
+          <!-- Colored arc (filled dynamically) -->
+          <path id="gaugeArc" d="M 20 100 A 80 80 0 0 1 180 100"
+                class="gauge-arc" fill="none" stroke-width="16"
+                stroke-dasharray="0 251.2"
+                stroke-linecap="round"/>
+          <!-- Needle -->
+          <line id="gaugeNeedle" x1="100" y1="100" x2="100" y2="30"
+                stroke="white" stroke-width="2.5"
+                stroke-linecap="round"
+                transform="rotate(0 100 100)"/>
+          <!-- Center dot -->
+          <circle cx="100" cy="100" r="6" fill="white"/>
+        </svg>
+        <div class="gauge-score" id="gaugeScore">--</div>
+        <div class="gauge-label" id="gaugeLabel">Scanning...</div>
+      </div>
+    </div>
+
+    <!-- Status Badge -->
+    <div class="status-banner" id="statusBanner">
+      <div class="status-icon" id="statusIcon">🔍</div>
+      <div class="status-info">
+        <div class="status-verdict" id="statusVerdict">Analyzing...</div>
+        <div class="status-url" id="statusUrl"></div>
+      </div>
+    </div>
+
+    <!-- Explanation -->
+    <div class="explanation-card" id="explanationCard">
+      <div class="explanation-header">
+        <svg viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+          <path d="M12 8v4M12 16h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        AI Analysis
+      </div>
+      <div class="explanation-text" id="explanationText">
+        Running threat analysis...
+      </div>
+    </div>
+
+    <!-- Risk Factors -->
+    <div class="risk-factors" id="riskFactors" style="display:none;">
+      <div class="risk-factors-title">⚠ Risk Factors Detected</div>
+      <ul class="risk-factors-list" id="riskFactorsList"></ul>
+    </div>
+
+    <!-- Score Breakdown -->
+    <div class="breakdown-card">
+      <div class="breakdown-title">Score Breakdown</div>
+      <div class="breakdown-bars" id="breakdownBars">
+        <div class="breakdown-item">
+          <div class="breakdown-label">
+            <span>🤖 AI Model</span>
+            <span class="breakdown-score" id="aiScore">--</span>
+          </div>
+          <div class="breakdown-bar-bg">
+            <div class="breakdown-bar" id="aiBar" style="width:0%"></div>
+          </div>
+        </div>
+        <div class="breakdown-item">
+          <div class="breakdown-label">
+            <span>🛡 Google Safe Browsing</span>
+            <span class="breakdown-score" id="sbScore">--</span>
+          </div>
+          <div class="breakdown-bar-bg">
+            <div class="breakdown-bar" id="sbBar" style="width:0%"></div>
+          </div>
+        </div>
+        <div class="breakdown-item">
+          <div class="breakdown-label">
+            <span>🐟 PhishTank</span>
+            <span class="breakdown-score" id="ptScore">--</span>
+          </div>
+          <div class="breakdown-bar-bg">
+            <div class="breakdown-bar" id="ptBar" style="width:0%"></div>
+          </div>
+        </div>
+        <div class="breakdown-item">
+          <div class="breakdown-label">
+            <span>🔎 Heuristics</span>
+            <span class="breakdown-score" id="hScore">--</span>
+          </div>
+          <div class="breakdown-bar-bg">
+            <div class="breakdown-bar" id="hBar" style="width:0%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="actions-card" id="actionsCard" style="display:none;">
+      <div class="actions-title">Recommended Actions</div>
+      <ul class="actions-list" id="actionsList"></ul>
+    </div>
+
+  </section>
+
+  <!-- ═══════════════════════ TABS ═══════════════════════ -->
+  <div class="tab-bar">
+    <button class="tab-btn active" id="tabScanner" data-tab="scanner">
+      <svg viewBox="0 0 24 24" fill="none">
+        <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/>
+        <path d="M20 20L16.5 16.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      Scanner
+    </button>
+    <button class="tab-btn" id="tabHistory" data-tab="history">
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M12 8v4l3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <path d="M3.05 11A9 9 0 1 0 4 7.34" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <path d="M3 4v3.5h3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      History
+    </button>
+    <button class="tab-btn" id="tabSettings" data-tab="settings">
+      <svg viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+        <path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      Settings
+    </button>
+  </div>
+
+  <!-- ═══════════════════════ HISTORY PANEL ═══════════════════════ -->
+  <section class="history-panel" id="historyPanel" style="display:none;">
+    <div class="panel-header">Recent Scans</div>
+    <div class="history-list" id="historyList">
+      <div class="empty-state">No recent scans</div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════ SETTINGS PANEL ═══════════════════════ -->
+  <section class="settings-panel" id="settingsPanel" style="display:none;">
+    <div class="panel-header">Settings</div>
+
+    <div class="setting-item">
+      <div class="setting-info">
+        <div class="setting-name">Real-time Protection</div>
+        <div class="setting-desc">Automatically scan URLs as you browse</div>
+      </div>
+      <label class="toggle-switch">
+        <input type="checkbox" id="settingRealtime" checked>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+
+    <div class="setting-item">
+      <div class="setting-info">
+        <div class="setting-name">Download Protection</div>
+        <div class="setting-desc">Warn about dangerous file downloads</div>
+      </div>
+      <label class="toggle-switch">
+        <input type="checkbox" id="settingDownload" checked>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+
+    <div class="setting-item">
+      <div class="setting-info">
+        <div class="setting-name">Block Malicious Pages</div>
+        <div class="setting-desc">Automatically block confirmed threats</div>
+      </div>
+      <label class="toggle-switch">
+        <input type="checkbox" id="settingBlock" checked>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+
+    <div class="setting-item">
+      <div class="setting-info">
+        <div class="setting-name">Notifications</div>
+        <div class="setting-desc">Show desktop alerts for threats</div>
+      </div>
+      <label class="toggle-switch">
+        <input type="checkbox" id="settingNotifications" checked>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+
+    <div class="backend-status" id="backendStatus">
+      <div class="bs-label">Backend Status</div>
+      <div class="bs-value" id="backendStatusVal">Checking...</div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════ FOOTER ═══════════════════════ -->
+  <footer class="footer">
+    <span>SafeLink AI v1.0.0</span>
+    <span class="footer-sep">•</span>
+    <span id="footerStats">AI-Powered Protection</span>
+  </footer>
+
+  <script src="popup.js"></script>
+</body>
+</html>

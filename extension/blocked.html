@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>⚠️ Dangerous Page Blocked — SafeLink AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --danger: #ef4444;
+      --danger-dark: #dc2626;
+      --danger-bg: rgba(239,68,68,0.08);
+      --bg: #0d0f1a;
+      --surface: #131629;
+      --card: #1e2340;
+      --text: #f1f5f9;
+      --muted: #64748b;
+      --border: rgba(255,255,255,0.07);
+    }
+
+    * { box-sizing: border-box; margin:0; padding:0; }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      overflow: hidden;
+    }
+
+    /* Animated background grid */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(239,68,68,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(239,68,68,0.04) 1px, transparent 1px);
+      background-size: 60px 60px;
+      pointer-events: none;
+      animation: grid-move 20s linear infinite;
+    }
+
+    @keyframes grid-move {
+      from { background-position: 0 0; }
+      to   { background-position: 60px 60px; }
+    }
+
+    /* Glow effect */
+    body::after {
+      content: '';
+      position: fixed;
+      top: -20%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 600px;
+      height: 400px;
+      background: radial-gradient(ellipse, rgba(239,68,68,0.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      max-width: 600px;
+      width: 100%;
+      animation: fade-up 0.6s cubic-bezier(0.34,1.56,0.64,1);
+    }
+
+    @keyframes fade-up {
+      from { opacity: 0; transform: translateY(30px) scale(0.96); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* Shield Icon */
+    .shield-container {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 100px;
+      height: 100px;
+      background: var(--danger-bg);
+      border: 2px solid rgba(239,68,68,0.25);
+      border-radius: 50%;
+      margin-bottom: 28px;
+      animation: shield-pulse 2.5s ease-in-out infinite;
+    }
+
+    @keyframes shield-pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.3); }
+      50%       { box-shadow: 0 0 0 25px rgba(239,68,68,0); }
+    }
+
+    .shield-icon {
+      font-size: 48px;
+      line-height: 1;
+    }
+
+    /* Title */
+    .blocked-title {
+      font-size: 32px;
+      font-weight: 800;
+      color: var(--danger);
+      letter-spacing: -0.5px;
+      margin-bottom: 6px;
+      text-shadow: 0 0 40px rgba(239,68,68,0.3);
+    }
+
+    .blocked-subtitle {
+      font-size: 14px;
+      color: var(--muted);
+      margin-bottom: 32px;
+      font-weight: 400;
+    }
+
+    /* Score card */
+    .score-card {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--danger-bg);
+      border: 1px solid rgba(239,68,68,0.25);
+      border-radius: 16px;
+      padding: 16px 28px;
+      margin-bottom: 28px;
+    }
+
+    .score-num {
+      font-size: 48px;
+      font-weight: 800;
+      color: var(--danger);
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .score-divider {
+      width: 1px;
+      height: 40px;
+      background: rgba(239,68,68,0.2);
+    }
+
+    .score-info {
+      text-align: left;
+    }
+
+    .score-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--danger);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .score-sublabel {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+
+    /* URL display */
+    .blocked-url-container {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 18px;
+      margin-bottom: 28px;
+      text-align: left;
+    }
+
+    .blocked-url-label {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 6px;
+    }
+
+    .blocked-url-text {
+      font-size: 13px;
+      color: #fca5a5;
+      word-break: break-all;
+      font-family: 'Courier New', monospace;
+      line-height: 1.5;
+    }
+
+    /* Warning list */
+    .warning-list {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 18px;
+      margin-bottom: 28px;
+      text-align: left;
+    }
+
+    .warning-list-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 12px;
+    }
+
+    .warning-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 10px;
+      font-size: 13px;
+      color: #94a3b8;
+      line-height: 1.4;
+    }
+
+    .warning-item:last-child { margin-bottom: 0; }
+
+    .warning-item-icon {
+      width: 18px;
+      height: 18px;
+      background: var(--danger-bg);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    /* Buttons */
+    .btn-group {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s ease;
+      letter-spacing: 0.3px;
+      text-decoration: none;
+    }
+
+    .btn:hover { transform: translateY(-2px); }
+    .btn:active { transform: translateY(0); }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      color: white;
+      box-shadow: 0 4px 15px rgba(239,68,68,0.3);
+    }
+
+    .btn-primary:hover {
+      box-shadow: 0 8px 25px rgba(239,68,68,0.4);
+    }
+
+    .btn-secondary {
+      background: var(--card);
+      color: var(--muted);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      color: var(--text);
+      border-color: rgba(255,255,255,0.15);
+    }
+
+    /* Branding */
+    .branding {
+      margin-top: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .branding-logo {
+      width: 20px;
+      height: 20px;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      border-radius: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      color: white;
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <!-- Shield Icon -->
+    <div class="shield-container">
+      <div class="shield-icon">🛡️</div>
+    </div>
+
+    <!-- Title -->
+    <h1 class="blocked-title">Page Blocked</h1>
+    <p class="blocked-subtitle">SafeLink AI has prevented you from accessing a dangerous website.</p>
+
+    <!-- Risk Score Card -->
+    <div class="score-card">
+      <div class="score-num" id="riskScore">--</div>
+      <div class="score-divider"></div>
+      <div class="score-info">
+        <div class="score-label">🚨 Risk Score</div>
+        <div class="score-sublabel">Out of 100 — Malicious</div>
+      </div>
+    </div>
+
+    <!-- Blocked URL -->
+    <div class="blocked-url-container">
+      <div class="blocked-url-label">Blocked URL</div>
+      <div class="blocked-url-text" id="blockedUrl">Loading...</div>
+    </div>
+
+    <!-- Why Blocked -->
+    <div class="warning-list">
+      <div class="warning-list-title">⚠ Why was this page blocked?</div>
+      <div class="warning-item">
+        <div class="warning-item-icon">🤖</div>
+        <span>AI model detected phishing patterns with high confidence.</span>
+      </div>
+      <div class="warning-item">
+        <div class="warning-item-icon">🛡</div>
+        <span>URL matches known malicious patterns in our threat database.</span>
+      </div>
+      <div class="warning-item">
+        <div class="warning-item-icon">🔒</div>
+        <span>Visiting this page may lead to credential theft or malware installation.</span>
+      </div>
+      <div class="warning-item">
+        <div class="warning-item-icon">📊</div>
+        <span>Combined threat score exceeds the malicious threshold (70/100).</span>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="btn-group">
+      <button class="btn btn-primary" id="goBackBtn">
+        ← Go Back to Safety
+      </button>
+      <button class="btn btn-secondary" id="ignoreBtnDanger">
+        Proceed Anyway (Unsafe)
+      </button>
+    </div>
+
+    <!-- Branding -->
+    <div class="branding">
+      <div class="branding-logo">S</div>
+      <span>Protected by SafeLink AI v1.0.0</span>
+    </div>
+
+  </div>
+
+  <script>
+    // Parse URL parameters
+    const params = new URLSearchParams(window.location.search);
+    const blockedUrl = decodeURIComponent(params.get("url") || "Unknown URL");
+    const riskScore  = params.get("score") || "99";
+
+    // Populate values
+    document.getElementById("blockedUrl").textContent = blockedUrl;
+    document.getElementById("riskScore").textContent  = riskScore;
+
+    // Go back button
+    document.getElementById("goBackBtn").addEventListener("click", () => {
+      if (window.history.length > 1) {
+        window.history.back();
+      } else {
+        window.location.href = "https://www.google.com";
+      }
+    });
+
+    // Ignore danger (allow user to override)
+    document.getElementById("ignoreBtnDanger").addEventListener("click", () => {
+      const confirmed = window.confirm(
+        "⚠️ WARNING: This page is flagged as MALICIOUS.\n\n" +
+        "Proceeding may expose your personal data, passwords, or device to malware.\n\n" +
+        "Are you ABSOLUTELY sure you want to continue?"
+      );
+      if (confirmed) {
+        // Tell the background service worker to temporarily whitelist this URL
+        chrome.runtime.sendMessage({ type: "IGNORE_URL", url: blockedUrl }, () => {
+          // Navigate to the dangerous URL
+          window.location.href = blockedUrl;
+        });
+      }
+    });
+
+    // Count-up animation for score
+    const scoreEl = document.getElementById("riskScore");
+    const targetScore = parseInt(riskScore, 10) || 99;
+    let current = 0;
+    const interval = setInterval(() => {
+      current = Math.min(current + 3, targetScore);
+      scoreEl.textContent = current;
+      if (current >= targetScore) clearInterval(interval);
+    }, 20);
+  </script>
+</body>
+</html>
