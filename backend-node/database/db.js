@@ -278,4 +278,5 @@ module.exports = {
   logUpdate,
   getRecentScans,
   getStats,
+  all,
 };

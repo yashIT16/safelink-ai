@@ -82,6 +82,16 @@ async function init() {
   await detectCurrentTab();
   await loadHistory();
   await checkBackendStatus();
+
+  // Try to load cached result for current tab
+  if (currentTabOriginalUrl && currentTabOriginalUrl.startsWith("http")) {
+    chrome.runtime.sendMessage({ type: "GET_SCAN_RESULT", url: currentTabOriginalUrl }, (response) => {
+      if (response && response.result) {
+        showResultsSection();
+        displayResults(response.result, currentTabOriginalUrl);
+      }
+    });
+  }
 }
 
 /**
@@ -92,9 +102,20 @@ async function detectCurrentTab() {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (tab && tab.url) {
       currentTabOriginalUrl = tab.url;
-      const display = tab.url.length > 55
-        ? tab.url.slice(0, 52) + "..."
-        : tab.url;
+
+      // Extract original URL if we're on the blocked page
+      if (tab.url.includes("blocked.html")) {
+        try {
+          const urlParam = new URL(tab.url).searchParams.get("url");
+          if (urlParam) {
+            currentTabOriginalUrl = decodeURIComponent(urlParam);
+          }
+        } catch (e) {}
+      }
+
+      const display = currentTabOriginalUrl.length > 55
+        ? currentTabOriginalUrl.slice(0, 52) + "..."
+        : currentTabOriginalUrl;
       currentTabUrl.innerHTML = `<span style="color:#94a3b8">${escapeHtml(display)}</span>`;
     } else {
       currentTabUrl.innerHTML = '<span style="color:#475569">Unable to detect URL</span>';
@@ -426,7 +447,22 @@ async function loadSettings() {
     settingDownload.checked = settings.download !== false;
     settingBlock.checked    = settings.block !== false;
     settingNotifications.checked = settings.notifications !== false;
+    updateStatusBadge();
   } catch {}
+}
+
+function updateStatusBadge() {
+  const isProtected = settingRealtime.checked || settingBlock.checked;
+  const badge = document.getElementById("protectionBadge");
+  if (badge) {
+    if (isProtected) {
+      badge.classList.add("active-mode");
+      badge.querySelector(".badge-text").textContent = "AI ACTIVE";
+    } else {
+      badge.classList.remove("active-mode");
+      badge.querySelector(".badge-text").textContent = "INACTIVE";
+    }
+  }
 }
 
 async function saveSettings() {
@@ -447,6 +483,7 @@ async function saveSettings() {
         notifications: settingNotifications.checked,
       }
     }).catch(() => {});
+    updateStatusBadge();
   } catch {}
 }
 

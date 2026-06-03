@@ -16,11 +16,36 @@
 
   let warningBanner = null;
   let warningOverlay = null;
+  let isHidingContent = false;
+
+  // ─── Instant Stealth ────────────────────────────────────────────────────────
+  // Hide the HTML immediately to prevent flickering of malicious content
+  // while we wait for the background scan.
+  if (document.documentElement && !window.location.href.startsWith("chrome-extension://")) {
+    document.documentElement.style.visibility = "hidden";
+    isHidingContent = true;
+    
+    // Safety timeout: if background doesn't respond in 3 seconds, reveal anyway
+    setTimeout(() => {
+      if (isHidingContent) revealContent();
+    }, 3000);
+  }
+
+  /**
+   * Reveal the page content once verified safe.
+   */
+  function revealContent() {
+    if (document.documentElement) {
+      document.documentElement.style.visibility = "visible";
+    }
+    isHidingContent = false;
+  }
 
   // ─── Message Listener ──────────────────────────────────────────────────────
 
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.type === "SHOW_WARNING") {
+      revealContent(); // Content script must be visible to show our warning overlay
       showWarningBanner(message.verdict, message.riskScore, message.explanation);
       sendResponse({ success: true });
     }
@@ -29,6 +54,40 @@
       sendResponse({ success: true });
     }
   });
+
+  // ─── Verification Loop ─────────────────────────────────────────────────────
+  
+  /**
+   * Ask the background script if the current URL is safe.
+   */
+  async function checkSafetyOnLoad() {
+    try {
+      const response = await chrome.runtime.sendMessage({ 
+        type: "CHECK_URL_SAFETY", 
+        url: window.location.href 
+      });
+
+      if (response && response.isSafe) {
+        revealContent();
+      } else if (response && response.blocked) {
+        // Background will redirect us, keep hidden.
+        console.log("[SafeLink AI] Page blocked. Redirecting...");
+      } else if (response && response.verdict === "suspicious") {
+        revealContent();
+        showWarningBanner(response.verdict, response.riskScore, response.explanation);
+      } else {
+        // Fallback: reveal after check completes if no block triggered
+        revealContent();
+      }
+    } catch (err) {
+      revealContent(); // On error, don't lock the user out
+    }
+  }
+
+  // Run the safety check
+  if (!window.location.href.startsWith("chrome-extension://")) {
+    checkSafetyOnLoad();
+  }
 
   // ─── Warning Banner ────────────────────────────────────────────────────────
 

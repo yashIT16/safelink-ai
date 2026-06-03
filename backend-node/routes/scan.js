@@ -221,4 +221,32 @@ router.get("/history", (req, res) => {
   }
 });
 
+// ─── GET /blacklist ────────────────────────────────────────────────────────────
+/**
+ * @route   GET /blacklist
+ * @desc    Get all blacklisted URLs and domains for extension sync
+ */
+router.get("/blacklist", (req, res) => {
+  try {
+    const urls = db.all(`SELECT url FROM blacklisted_urls WHERE expires_at IS NULL OR expires_at > datetime('now')`);
+    const phish = db.all(`SELECT url FROM phishing_urls WHERE risk_score >= 70`);
+    
+    // Merge and deduplicate domains
+    const uniqueDomains = new Set();
+    [...urls, ...phish].forEach(item => {
+      try {
+        const d = new URL(item.url).hostname;
+        if (d) uniqueDomains.add(d);
+      } catch {}
+    });
+
+    return res.json({ 
+      domains: Array.from(uniqueDomains),
+      count: uniqueDomains.size 
+    });
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to fetch blacklist." });
+  }
+});
+
 module.exports = router;

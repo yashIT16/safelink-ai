@@ -35,14 +35,24 @@ async function initialize() {
   const stored = await chrome.storage.local.get([
     "realtime", "download", "block", "notifications"
   ]);
+  // Always Active Mode: Force core protection features to true on startup
   settings = {
-    realtime:      stored.realtime !== false,
-    download:      stored.download !== false,
-    block:         stored.block !== false,
+    realtime:      true,
+    download:      true,
+    block:         true,
     notifications: stored.notifications !== false,
   };
 
-  console.log("[SafeLink AI] Background service worker started.");
+  // Persist the forced settings so the UI is in sync
+  await chrome.storage.local.set({
+    realtime: true,
+    download: true,
+    block:    true
+  });
+
+  updateBadge();
+
+  console.log("[SafeLink AI] Always Active Mode initialized.");
   console.log("[SafeLink AI] Settings:", settings);
 
   // Clear any old/stale dynamic blocking rules from previous sessions
@@ -54,9 +64,66 @@ async function initialize() {
         await chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds: oldRuleIds });
         console.log(`[SafeLink AI] Cleared ${oldRuleIds.length} stale dynamic rules.`);
       }
+      
+      
+      // Sync known malicious domains from backend for instant blocking
+      await syncGlobalBlacklist();
+
+      // PROTECTIVE SWEEP: Check all already-open tabs for malicious content
+      console.log("[SafeLink AI] Performing retroactive protective sweep...");
+      await scanAllOpenTabs();
     } catch(e) {
-      console.warn("Could not clear old dynamic rules", e);
+      console.warn("Could not sync/clear dynamic rules", e);
     }
+  }
+}
+
+/**
+ * Scan every open browser tab and block those that are malicious.
+ * This handles tabs that were open before the extension started.
+ */
+async function scanAllOpenTabs() {
+  try {
+    const tabs = await chrome.tabs.query({ url: "http://*/*" });
+    const httpsTabs = await chrome.tabs.query({ url: "https://*/*" });
+    const allTabs = [...tabs, ...httpsTabs];
+
+    console.log(`[SafeLink AI] Sweeping ${allTabs.length} open tabs...`);
+
+    for (const tab of allTabs) {
+      if (!tab.url) continue;
+      
+      const result = await scanURLBackground(tab.url);
+      if (result && result.verdict === "malicious" && settings.block) {
+        console.log(`[SafeLink AI] Existing tab found malicious: ${tab.url}`);
+        await blockPage(tab.id, tab.url, result);
+      }
+    }
+  } catch (err) {
+    console.error("[SafeLink AI] Error during tab sweep:", err.message);
+  }
+}
+
+/**
+ * Fetch the global blacklist from the backend and add to DNR rules.
+ */
+async function syncGlobalBlacklist() {
+  try {
+    const response = await fetch(`${BACKEND_URL}/blacklist`);
+    if (!response.ok) return;
+    const { domains } = await response.json();
+    
+    if (domains && domains.length > 0) {
+      console.log(`[SafeLink AI] Syncing ${domains.length} malicious domains into DNR...`);
+      
+      const BATCH_SIZE = 100;
+      for (let i = 0; i < domains.length; i += BATCH_SIZE) {
+        const batch = domains.slice(i, i + BATCH_SIZE);
+        await addDomainsToBlocklist(batch);
+      }
+    }
+  } catch (err) {
+    console.warn("[SafeLink AI] Global blacklist sync failed:", err.message);
   }
 }
 
@@ -66,6 +133,7 @@ initialize();
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === "SETTINGS_UPDATED") {
     settings = { ...settings, ...message.settings };
+    updateBadge();
     console.log("[SafeLink AI] Settings updated:", settings);
   }
 
@@ -81,6 +149,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     sendResponse({ result: cached });
   }
 
+  if (message.type === "CHECK_URL_SAFETY") {
+    handleUrlSafetyCheck(message.url)
+      .then(res => sendResponse(res))
+      .catch(() => sendResponse({ isSafe: true }));
+    return true;
+  }
+
   if (message.type === "IGNORE_URL") {
     temporaryWhitelist.add(message.url);
     removeDynamicBlockRule(message.url);
@@ -90,60 +165,90 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 });
 
+/**
+ * Handle safety check request from content script.
+ * Returns verdict and block status.
+ */
+async function handleUrlSafetyCheck(url) {
+  const result = await scanURLBackground(url);
+  if (!result) return { isSafe: true };
+
+  if (result.verdict === "malicious" && settings.block) {
+    // If not already on blocked page, redirect
+    return { blocked: true, verdict: "malicious" };
+  }
+  
+  return { 
+    isSafe: result.verdict === "safe",
+    verdict: result.verdict,
+    riskScore: result.riskScore,
+    explanation: result.explanation
+  };
+}
+
 // ─── Real-time URL Protection ─────────────────────────────────────────────────
 
 /**
- * Listen to tab URL changes and scan them.
+ * PROACTIVE PROTECTION: Intercept navigation BEFORE it begins.
+ * This prevents data from being sent to malicious hosts.
  */
-chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
-  // Only scan on complete navigation with a real URL
-  if (changeInfo.status !== "complete") return;
+chrome.webNavigation.onBeforeNavigate.addListener(async (details) => {
+  const { tabId, url, frameId } = details;
+
+  // Only scan main frame navigation with a real HTTP URL
+  if (frameId !== 0) return;
   if (!settings.realtime) return;
-  if (!tab.url || !tab.url.startsWith("http")) return;
+  if (!url || !url.startsWith("http")) return;
 
-  // Skip extension internal pages
-  if (tab.url.startsWith("chrome://") || tab.url.startsWith("chrome-extension://")) return;
-
-  // Skip if this tab is currently being blocked (avoid loop)
-  if (blockedTabs.has(tabId)) {
-    blockedTabs.delete(tabId);
-    return;
-  }
+  // Skip internal pages
+  if (url.startsWith("chrome://") || url.startsWith("chrome-extension://")) return;
 
   // Skip if user explicitly permitted in the last 5 minutes
-  if (temporaryWhitelist.has(tab.url)) {
-    return;
-  }
+  if (temporaryWhitelist.has(url)) return;
 
   try {
-    const result = await scanURLBackground(tab.url);
-
+    const result = await scanURLBackground(url);
     if (!result) return;
 
     if (result.verdict === "malicious" && settings.block) {
-      // Gracefully redirect instead of hard-blocking the network
-      await blockPage(tabId, tab.url, result);
-    } else if (result.verdict === "suspicious") {
-      // Show warning overlay via content script
-      await showWarning(tabId, result);
+      console.log(`[SafeLink AI] Proactively blocking malicious URL: ${url}`);
+      
+      // 1. Add to native DNR blocklist for immediate network suppression
+      await addDynamicBlockRule(url, result.riskScore);
 
-      // Show notification
-      if (settings.notifications) {
-        showNotification(
-          "⚠️ Suspicious URL Detected",
-          `Risk Score: ${result.riskScore}/100\n${tab.url.slice(0, 60)}`,
-          "warning"
-        );
-      }
-    } else if (result.verdict === "malicious" && settings.notifications) {
-      showNotification(
-        "🚨 Malicious URL Blocked!",
-        `SafeLink AI blocked a dangerous page.\n${tab.url.slice(0, 60)}`,
-        "danger"
-      );
+      // 2. Redirect the tab to our warning page
+      await blockPage(tabId, url, result);
     }
   } catch (err) {
-    console.error("[SafeLink AI] Tab scan error:", err.message);
+    console.error("[SafeLink AI] Proactive scan error:", err.message);
+  }
+});
+
+/**
+ * Listen to tab URL updates for suspicious overlays and notifications.
+ */
+chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+  if (changeInfo.status !== "complete") return;
+  if (!tab.url || !tab.url.startsWith("http")) return;
+
+  const result = getCached(tab.url);
+  if (!result) return;
+
+  if (result.verdict === "suspicious") {
+    await showWarning(tabId, result);
+    if (settings.notifications) {
+      showNotification(
+        "⚠️ Suspicious URL Detected",
+        `Risk Score: ${result.riskScore}/100\n${tab.url.slice(0, 60)}`,
+        "warning"
+      );
+    }
+  } else if (result.verdict === "malicious" && settings.notifications) {
+    showNotification(
+      "🚨 Malicious URL Blocked!",
+      `SafeLink AI blocked a dangerous page.\n${tab.url.slice(0, 60)}`,
+      "danger"
+    );
   }
 });
 
@@ -166,40 +271,63 @@ async function blockPage(tabId, url, result) {
   }
 }
 
-let ruleIdCounter = 1000;
-const ruleIdMap = new Map(); // domain -> ruleId
+/**
+ * Helper to add a batch of domains to the DNR blocklist with native REDIRECTION.
+ */
+async function addDomainsToBlocklist(domains, score = 99) {
+  if (!chrome.declarativeNetRequest) return;
+  try {
+    const existingRules = await chrome.declarativeNetRequest.getDynamicRules();
+    const existingIds = new Set(existingRules.map(r => r.id));
+    
+    const addRules = domains.map(domain => {
+      const ruleId = generateRuleId(domain);
+      if (existingIds.has(ruleId)) return null;
+
+      const warningUrl = chrome.runtime.getURL("blocked.html") + 
+                         `?url=${encodeURIComponent("http://" + domain)}&score=${score}&verdict=malicious`;
+
+      return {
+        id: ruleId,
+        priority: 1,
+        action: { 
+          type: "redirect",
+          redirect: { url: warningUrl }
+        },
+        condition: {
+          urlFilter: `||${domain}`,
+          resourceTypes: ["main_frame"]
+        }
+      };
+    }).filter(r => r !== null);
+
+    if (addRules.length > 0) {
+      await chrome.declarativeNetRequest.updateDynamicRules({
+        addRules: addRules
+      });
+    }
+  } catch (err) {
+    console.warn(`[SafeLink AI] DNR batch update failed:`, err.message);
+  }
+}
+
+/**
+ * Generate a consistent numeric ID for a domain.
+ */
+function generateRuleId(domain) {
+  return domain.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) + 2000;
+}
 
 /**
  * Dynamically block a malicious domain using declarativeNetRequest
  */
-async function addDynamicBlockRule(url) {
-  if (!chrome.declarativeNetRequest) return;
+async function addDynamicBlockRule(url, score = 99) {
   try {
     const parsed = new URL(url);
-    const domain = parsed.hostname;
-    
-    const existingRules = await chrome.declarativeNetRequest.getDynamicRules();
-    if (existingRules.some(r => r.condition.urlFilter === domain)) {
-      return; // Already blocked
-    }
-
-    const ruleId = ruleIdCounter++;
-    ruleIdMap.set(domain, ruleId);
-
-    await chrome.declarativeNetRequest.updateDynamicRules({
-      addRules: [{
-        id: ruleId,
-        priority: 10,
-        action: { type: "block" },
-        condition: {
-          urlFilter: domain,
-          resourceTypes: ["main_frame", "sub_frame", "xmlhttprequest", "script"]
-        }
-      }],
-      removeRuleIds: [ruleId]
-    });
-    console.log(`[SafeLink AI] Native browser block added for ${domain}`);
-  } catch (err) {}
+    await addDomainsToBlocklist([parsed.hostname], score);
+  } catch (err) {
+    console.error("[SafeLink AI] Failed to add DNR rule:", err.message);
+  }
 }
 
 /**
@@ -210,14 +338,12 @@ async function removeDynamicBlockRule(url) {
   try {
     const parsed = new URL(url);
     const domain = parsed.hostname;
-    const ruleId = ruleIdMap.get(domain);
-    if (ruleId) {
-      await chrome.declarativeNetRequest.updateDynamicRules({
-        removeRuleIds: [ruleId]
-      });
-      ruleIdMap.delete(domain);
-      console.log(`[SafeLink AI] Native browser block removed for ${domain}`);
-    }
+    const ruleId = generateRuleId(domain);
+    
+    await chrome.declarativeNetRequest.updateDynamicRules({
+      removeRuleIds: [ruleId]
+    });
+    console.log(`[SafeLink AI] DNR block removed for: ${domain}`);
   } catch (err) {}
 }
 
@@ -387,6 +513,20 @@ function showNotification(title, message, type = "info") {
     message,
     priority: type === "danger" ? 2 : 1,
   }).catch(() => {});
+}
+
+/**
+ * Update the extension icon badge to show "ON" when protection is active.
+ */
+function updateBadge() {
+  const isActive = settings.realtime || settings.block;
+  if (isActive) {
+    chrome.action.setBadgeText({ text: "ON" });
+    chrome.action.setBadgeBackgroundColor({ color: "#22c55e" }); // Emerald green
+  } else {
+    chrome.action.setBadgeText({ text: "OFF" });
+    chrome.action.setBadgeBackgroundColor({ color: "#94a3b8" }); // Slate
+  }
 }
 
 // ─── Periodic Cache Cleanup ───────────────────────────────────────────────────

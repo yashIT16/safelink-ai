@@ -178,11 +178,19 @@ function computeRiskScore({ aiResult, sbResult, ptResult, dnsResult, url, isBlac
   }
 
   // ── Weighted combination ───────────────────────────────────────────────────
-  const weightedScore =
+  let weightedScore =
     aiScore * WEIGHTS.ai +
     sbScore * WEIGHTS.googleSB +
     ptScore * WEIGHTS.phishTank +
     heuristicScore * WEIGHTS.heuristic;
+
+  // OVERRIDE: If the AI model is highly confident it's malicious, 
+  // ensure the final score breaches the "malicious" threshold (70+).
+  if (aiScore >= 85) {
+    weightedScore = Math.max(weightedScore, 85);
+  } else if (aiScore >= 70) {
+    weightedScore = Math.max(weightedScore, 75);
+  }
 
   const finalScore = Math.round(Math.min(weightedScore, 100));
 
