@@ -96,6 +96,20 @@ python create_icons.py  # Use python3 on Linux
 
 ---
 
+### Step 4: Background Autostart (Windows Only)
+
+Tired of leaving terminal windows open? You can install SafeLink AI to run completely invisibly in the background whenever you turn on your PC.
+
+**To Install Autostart:**
+1. Navigate to your `safelink-ai` folder in File Explorer.
+2. Double-click `install_autostart.bat`.
+3. The servers will now launch silently on boot.
+
+**To Stop Servers:**
+1. Double-click `stop_safelink.bat` to shut down the hidden Node.js and Python processes.
+
+---
+
 ## 🔑 API Keys (Optional)
 
 The system works out-of-the-box with **mock API responses**. Add real keys for production:
